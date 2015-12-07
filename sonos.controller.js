@@ -7,7 +7,8 @@ var config = require('./config.js');
 
 var options = {
   host: config.homehost,
-  port: config.homeport
+  port: config.homeport,
+  zone: config.zone
 };
 
 // Accept incoming Amazon Echo request.
@@ -15,7 +16,10 @@ var options = {
 exports.index = function(req, res) {
   var sessionId;
   var userId;
-  console.log(req.body);
+  if(Object.keys(req.body).length < 1) {
+    console.log('no response body to parse', req.body);
+    return res.status(500).jsonp({message: 'no response body to parse'})
+  }
   if(req.body.request.type === 'LaunchRequest') {
     alexa.launchRequest(req.body);
     // TODO For now, we don't care about the session or the user id, we will refactor this later.
@@ -39,7 +43,8 @@ exports.index = function(req, res) {
     var intent = alexa.intentName;
     var slots = alexa.slots;
     if(intent === 'PlayPlaylist') {
-      options.path='/family%20room/playlist/'+encodeURIComponent(req.body.request.intent.slots.Playlist.value);
+      console.log('playlist')
+      options.path='/'+options.zone+'/playlist/'+encodeURIComponent(req.body.request.intent.slots.Playlist.value);
       http.request(options, function(response){
         console.log(response.body);
         alexa.response('Playlist requested.', {
@@ -55,7 +60,7 @@ exports.index = function(req, res) {
       }).end();
     } else if(intent === 'PlayFavorite') {
       console.log('favorite');
-      options.path='/family%20room/favorite/'+encodeURIComponent(req.body.request.intent.slots.Favorite.value);
+      options.path='/'+options.zone+'/favorite/'+encodeURIComponent(req.body.request.intent.slots.Favorite.value);
       http.request(options, function(response){
         alexa.response('Playing '+req.body.request.intent.slots.Favorite.value, {
           title: 'Alexa-Sonos',
@@ -70,7 +75,7 @@ exports.index = function(req, res) {
       }).end();
     } else if(intent === 'StartMusic') {
       console.log('start');
-      options.path='/family%20room/play';
+      options.path='/'+options.zone+'/play';
       console.log(options.path);
       http.request(options, function(response){
         alexa.response('Playing', {
@@ -86,7 +91,7 @@ exports.index = function(req, res) {
       }).end();
     } else if(intent === 'StopMusic') {
       console.log('stop');
-      options.path='/family%20room/pause';
+      options.path='/'+options.zone+'/pause';
       http.request(options, function(response){
         console.log(response.body);
         alexa.response('Pausing', {
